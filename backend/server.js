@@ -62,7 +62,7 @@ let nextId = 7;
 // MySQL Cloud Database Connection
 let pool = null;
 let useDb = false;
-let tableName = process.env.TABLE_NAME || 'NinSom_Employee';
+let tableName = process.env.TABLE_NAME || 'kanwit_6730251417_employee';
 
 try {
   const mysql = require('mysql2/promise');
@@ -84,21 +84,27 @@ try {
       console.log('✅ Connected to MySQL Cloud Database (ip_std6730251417) successfully');
 
       // Check primary table
-      const [t1] = await conn.query("SHOW TABLES LIKE 'NinSom_Employee'");
+      const [t1] = await conn.query("SHOW TABLES LIKE 'kanwit_6730251417_employee'");
       if (t1.length > 0) {
-        tableName = 'NinSom_Employee';
+        tableName = 'kanwit_6730251417_employee';
         useDb = true;
       } else {
-        const [t2] = await conn.query("SHOW TABLES LIKE 'employees'");
+        const [t2] = await conn.query("SHOW TABLES LIKE 'FinalExam_Kanwit_Wutt_Employee'");
         if (t2.length > 0) {
-          tableName = 'employees';
+          tableName = 'FinalExam_Kanwit_Wutt_Employee';
           useDb = true;
+        } else {
+          const [t3] = await conn.query("SHOW TABLES LIKE 'employees'");
+          if (t3.length > 0) {
+            tableName = 'employees';
+            useDb = true;
+          }
         }
       }
       conn.release();
       console.log(`Database storage: ${useDb ? 'Active on table `' + tableName + '`' : 'In-memory fallback'}`);
     } catch (err) {
-      console.log('⚠️ MySQL connection unavailable, running with in-memory storage:', err.message);
+      console.log('⚠️  MySQL connection unavailable, running with in-memory storage:', err.message);
       useDb = false;
     }
   })();
@@ -109,11 +115,11 @@ try {
 // Helper function to extract employee fields regardless of column prefix
 function normalizeRow(r) {
   return {
-    id: String(r.NinSom_ID_Employee || r.Kanwit_Wutt_ID_Employee || r.id),
-    name: r.NinSom_Name_Employee || r.Kanwit_Wutt_Name_Employee || r.name,
-    position: r.NinSom_Position_Employee || r.Kanwit_Wutt_Position_Employee || r.position,
-    status: r.NinSom_Status_Employee || r.Kanwit_Wutt_Status_Employee || r.status || 'Active',
-    salary: Number(r.NinSom_Salary_Employee || r.Kanwit_Wutt_Salary_Employee || r.salary)
+    id: String(r.kanwit_6730251417_ID_Employee || r.kanwit_ID_Employee || r.Kanwit_Wutt_ID_Employee || r.NinSom_ID_Employee || r.id),
+    name: r.kanwit_6730251417_Name_Employee || r.kanwit_Name_Employee || r.Kanwit_Wutt_Name_Employee || r.NinSom_Name_Employee || r.name,
+    position: r.kanwit_6730251417_Position_Employee || r.kanwit_Position_Employee || r.Kanwit_Wutt_Position_Employee || r.NinSom_Position_Employee || r.position,
+    status: r.kanwit_6730251417_Status_Employee || r.kanwit_Status_Employee || r.Kanwit_Wutt_Status_Employee || r.NinSom_Status_Employee || r.status || 'Active',
+    salary: Number(r.kanwit_6730251417_Salary_Employee || r.kanwit_Salary_Employee || r.Kanwit_Wutt_Salary_Employee || r.NinSom_Salary_Employee || r.salary)
   };
 }
 
@@ -183,9 +189,15 @@ app.post('/api/employees', async (req, res) => {
 
   if (useDb && pool) {
     try {
-      if (tableName === 'NinSom_Employee') {
+      if (tableName === 'kanwit_6730251417_employee') {
         const [result] = await pool.query(
-          `INSERT INTO \`NinSom_Employee\` (NinSom_Name_Employee, NinSom_Position_Employee, NinSom_Status_Employee, NinSom_Salary_Employee) VALUES (?, ?, 'Active', ?)`,
+          `INSERT INTO \`kanwit_6730251417_employee\` (kanwit_6730251417_Name_Employee, kanwit_6730251417_Position_Employee, kanwit_6730251417_Status_Employee, kanwit_6730251417_Salary_Employee) VALUES (?, ?, 'Active', ?)`,
+          [newEmployee.name, newEmployee.position, newEmployee.salary]
+        );
+        if (result && result.insertId) newEmployee.id = String(result.insertId);
+      } else if (tableName === 'FinalExam_Kanwit_Wutt_Employee') {
+        const [result] = await pool.query(
+          `INSERT INTO \`FinalExam_Kanwit_Wutt_Employee\` (Kanwit_Wutt_Name_Employee, Kanwit_Wutt_Position_Employee, Kanwit_Wutt_Status_Employee, Kanwit_Wutt_Salary_Employee) VALUES (?, ?, 'Active', ?)`,
           [newEmployee.name, newEmployee.position, newEmployee.salary]
         );
         if (result && result.insertId) newEmployee.id = String(result.insertId);
@@ -221,8 +233,8 @@ app.put('/api/employees/:id/status', async (req, res) => {
 
   if (useDb && pool) {
     try {
-      const idCol = tableName === 'NinSom_Employee' ? 'NinSom_ID_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_ID_Employee' : 'id');
-      const statusCol = tableName === 'NinSom_Employee' ? 'NinSom_Status_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Status_Employee' : 'status');
+      const idCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_ID_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_ID_Employee' : (tableName === 'NinSom_Employee' ? 'NinSom_ID_Employee' : 'id'));
+      const statusCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_Status_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Status_Employee' : (tableName === 'NinSom_Employee' ? 'NinSom_Status_Employee' : 'status'));
 
       const [rows] = await pool.query(`SELECT * FROM \`${tableName}\` WHERE \`${idCol}\` = ?`, [id]);
       if (rows && rows.length > 0) {
@@ -260,13 +272,63 @@ app.put('/api/employees/:id/status', async (req, res) => {
   });
 });
 
+// PUT /api/employees/:id - Update employee details (Name, Position, Salary, Status)
+app.put('/api/employees/:id', async (req, res) => {
+  const { id } = req.params;
+  const { name, position, salary, status } = req.body;
+
+  if (useDb && pool) {
+    try {
+      const idCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_ID_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_ID_Employee' : 'id');
+      const nameCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_Name_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Name_Employee' : 'name');
+      const posCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_Position_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Position_Employee' : 'position');
+      const salCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_Salary_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Salary_Employee' : 'salary');
+      const statCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_Status_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Status_Employee' : 'status');
+
+      const [rows] = await pool.query(`SELECT * FROM \`${tableName}\` WHERE \`${idCol}\` = ?`, [id]);
+      if (rows && rows.length > 0) {
+        const current = normalizeRow(rows[0]);
+        const updatedName = name !== undefined ? String(name).trim() : current.name;
+        const updatedPos = position !== undefined ? String(position).trim() : current.position;
+        const updatedSal = salary !== undefined ? Number(salary) : current.salary;
+        const updatedStat = status !== undefined ? String(status) : current.status;
+
+        await pool.query(
+          `UPDATE \`${tableName}\` SET \`${nameCol}\` = ?, \`${posCol}\` = ?, \`${salCol}\` = ?, \`${statCol}\` = ? WHERE \`${idCol}\` = ?`,
+          [updatedName, updatedPos, updatedSal, updatedStat, id]
+        );
+        pool.query(`UPDATE \`employees\` SET name = ?, position = ?, salary = ?, status = ? WHERE id = ?`, [updatedName, updatedPos, updatedSal, updatedStat, id]).catch(() => {});
+
+        return res.status(200).json({
+          success: true,
+          employee: { id: String(id), name: updatedName, position: updatedPos, status: updatedStat, salary: updatedSal }
+        });
+      }
+    } catch (err) {
+      console.error('DB update error:', err.message);
+    }
+  }
+
+  const emp = employees.find(e => e.id === String(id));
+  if (!emp) {
+    return res.status(404).json({ success: false, message: `Employee with id ${id} not found.` });
+  }
+
+  if (name !== undefined) emp.name = String(name).trim();
+  if (position !== undefined) emp.position = String(position).trim();
+  if (salary !== undefined) emp.salary = Number(salary);
+  if (status !== undefined) emp.status = String(status);
+
+  return res.status(200).json({ success: true, employee: emp });
+});
+
 // DELETE /api/employees/:id - Remove employee from the system
 app.delete('/api/employees/:id', async (req, res) => {
   const { id } = req.params;
 
   if (useDb && pool) {
     try {
-      const idCol = tableName === 'NinSom_Employee' ? 'NinSom_ID_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_ID_Employee' : 'id');
+      const idCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_ID_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_ID_Employee' : (tableName === 'NinSom_Employee' ? 'NinSom_ID_Employee' : 'id'));
       const [result] = await pool.query(`DELETE FROM \`${tableName}\` WHERE \`${idCol}\` = ?`, [id]);
       pool.query(`DELETE FROM \`employees\` WHERE id = ?`, [id]).catch(() => {});
 
@@ -385,7 +447,7 @@ app.get('/api/employees/salary-clusters', async (req, res) => {
 
     if (useDb && pool) {
       try {
-        const salCol = tableName === 'NinSom_Employee' ? 'NinSom_Salary_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Salary_Employee' : 'salary');
+        const salCol = tableName === 'kanwit_6730251417_employee' ? 'kanwit_6730251417_Salary_Employee' : (tableName === 'FinalExam_Kanwit_Wutt_Employee' ? 'Kanwit_Wutt_Salary_Employee' : 'salary');
         const [rows] = await pool.query(`SELECT \`${salCol}\` AS salary FROM \`${tableName}\``);
         if (rows && rows.length > 0) {
           currentSalaries = rows.map(r => Number(r.salary)).filter(s => !isNaN(s));
@@ -403,30 +465,25 @@ app.get('/api/employees/salary-clusters', async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      totalEmployees: currentSalaries.length,
       clusters
     });
-  } catch (error) {
-    console.error("Error computing salary clusters:", error);
+  } catch (err) {
     return res.status(500).json({
       success: false,
-      message: "Internal server error during clustering."
+      message: "Internal server error calculating salary clusters: " + err.message
     });
   }
 });
 
-// Root status endpoint
+// Root route - serve Dashboard UI
 app.get('/', (req, res) => {
-  res.json({
-    message: "HR Manager & Salary Analytics API is running",
-    course: "Internet Programming Final Exam (2026)",
-    student: "Kanwit Voottikulsin (std6730251417)",
-    port: PORT,
-    storage: useDb ? `Cloud MySQL (${tableName})` : "In-memory",
-    database: "ip_std6730251417"
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Start Server
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Backend server running on http://0.0.0.0:${PORT}`);
+// Start Express Server
+const server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 HR Manager & Salary Analytics System running on http://0.0.0.0:${PORT}`);
 });
+
+module.exports = { app, server, run1DKMeans };
