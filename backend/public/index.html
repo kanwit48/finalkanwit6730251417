@@ -460,7 +460,7 @@
     </div>
     <div id="auth-actions" style="display: none; display: flex; align-items: center; gap: 1rem;">
       <span style="font-size: 0.85rem; color: var(--text-muted);">
-        👤 เข้าสู่ระบบในฐานะ: <strong style="color: #111827;">admin</strong>
+        👤 เข้าสู่ระบบในฐานะ: <strong id="logged-user-display" style="color: #111827;">admin</strong>
       </span>
       <button class="btn btn-outline btn-sm" onclick="logout()">
         🚪 ออกจากระบบ (Sign Out)
@@ -480,14 +480,25 @@
       <form onsubmit="handleLogin(event)">
         <div class="form-group">
           <label>ชื่อผู้ใช้ (Username)</label>
-          <input type="text" id="login-user" class="form-input" value="admin" required>
+          <input type="text" id="login-user" class="form-input" value="admin" required autocomplete="username">
         </div>
         <div class="form-group">
           <label>รหัสผ่าน (Password)</label>
-          <input type="password" id="login-pass" class="form-input" value="password123" required>
+          <input type="password" id="login-pass" class="form-input" value="password123" required autocomplete="current-password">
+        </div>
+        <div style="margin-bottom: 1rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">
+          💡 บัญชีผู้ดูแลระบบที่รองรับ:
+          <div style="margin-top: 0.35rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" onclick="fillCreds('admin', 'password123')">
+              🔑 admin / password123
+            </button>
+            <button type="button" class="btn btn-outline btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;" onclick="fillCreds('kanwit.v@ku.th', 'Kan_0954181639')">
+              🎓 kanwit.v@ku.th
+            </button>
+          </div>
         </div>
         <div id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 0.75rem; display: none;"></div>
-        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+        <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
           🔑 เข้าสู่ระบบ (Sign In)
         </button>
       </form>
@@ -729,13 +740,23 @@
     }
 
     // 1. Authentication (Login / Logout)
+    function fillCreds(u, p) {
+      document.getElementById('login-user').value = u;
+      document.getElementById('login-pass').value = p;
+      document.getElementById('login-error').style.display = 'none';
+    }
+
     function checkAuth() {
       const token = sessionStorage.getItem('token');
       const authActions = document.getElementById('auth-actions');
+      const userDisplay = document.getElementById('logged-user-display');
       if (token) {
         document.getElementById('login-view').style.display = 'none';
         document.getElementById('dashboard-view').style.display = 'flex';
         authActions.style.display = 'flex';
+        if (userDisplay) {
+          userDisplay.innerText = sessionStorage.getItem('user_name') || 'admin';
+        }
         loadEmployees();
         loadSalaryClusters();
       } else {
@@ -752,6 +773,7 @@
       const errBox = document.getElementById('login-error');
       errBox.style.display = 'none';
 
+      // 1. Try Backend API first if not static GitHub Pages
       if (!isGitHubPages) {
         try {
           const res = await fetch(`${API_BASE}/api/login`, {
@@ -762,26 +784,43 @@
           const data = await res.json();
           if (res.ok && data.success) {
             sessionStorage.setItem('token', data.token);
+            sessionStorage.setItem('user_name', username);
             showToast('เข้าสู่ระบบสำเร็จ (Login Success)');
             checkAuth();
             return;
           }
-        } catch (err) {}
+        } catch (err) {
+          console.log('Login API error, trying local validation:', err);
+        }
       }
 
-      // Client-side credentials check (for GitHub Pages & fallback)
-      if (username === 'admin' && password === 'password123') {
-        sessionStorage.setItem('token', 'gh-demo-token');
+      // 2. Client-side authentication list (supports GitHub Pages & fallback)
+      const validCreds = [
+        { u: 'admin', p: 'password123' },
+        { u: 'kanwit.v@ku.th', p: 'Kan_0954181639' },
+        { u: 'kanwit', p: 'Kan_0954181639' },
+        { u: '6730251417', p: 'Kan_0954181639' },
+        { u: '6730251417', p: 'password123' }
+      ];
+
+      const match = validCreds.find(c =>
+        c.u.toLowerCase() === username.toLowerCase() && c.p === password
+      );
+
+      if (match) {
+        sessionStorage.setItem('token', 'gh-session-token');
+        sessionStorage.setItem('user_name', match.u);
         showToast('เข้าสู่ระบบสำเร็จ (Login Success)');
         checkAuth();
       } else {
-        errBox.innerText = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (401)';
+        errBox.innerText = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (กรุณาใช้ admin / password123 หรือ kanwit.v@ku.th)';
         errBox.style.display = 'block';
       }
     }
 
     function logout() {
       sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user_name');
       showToast('ออกจากระบบเรียบร้อย');
       checkAuth();
     }
@@ -1324,7 +1363,6 @@
           }
         });
       }
-    }
     }
 
     // Close modal on click outside

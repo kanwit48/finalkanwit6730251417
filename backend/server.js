@@ -113,11 +113,24 @@ function normalizeRow(r) {
 app.post('/api/login', (req, res) => {
   const { username, password } = req.body;
 
-  if (username === 'admin' && password === 'password123') {
+  const validCreds = [
+    { u: 'admin', p: 'password123' },
+    { u: 'kanwit.v@ku.th', p: 'Kan_0954181639' },
+    { u: 'kanwit', p: 'Kan_0954181639' },
+    { u: '6730251417', p: 'Kan_0954181639' },
+    { u: '6730251417', p: 'password123' }
+  ];
+
+  const match = validCreds.find(c =>
+    c.u.toLowerCase() === String(username || '').trim().toLowerCase() &&
+    c.p === String(password || '').trim()
+  );
+
+  if (match) {
     return res.status(200).json({
       success: true,
       token: "mock-jwt-token-kanwit-6730251417",
-      user: { username: "admin", role: "admin" }
+      user: { username: match.u, role: "admin" }
     });
   }
 
