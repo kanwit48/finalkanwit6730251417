@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HR Manager & Salary Analytics - Kanwit Voottikulsin (6730251417)</title>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --primary: #4F46E5;
@@ -500,8 +501,8 @@
     <section class="card">
       <div class="card-header">
         <div>
-          <h2 class="card-title">📊 Phase 2: Salary Structure Analytics</h2>
-          <p class="card-desc">อัลกอริทึม 1D K-Means Clustering ($k=3$ Tiers) คำนวณฐานเงินเดือนแบบอัตโนมัติ</p>
+          <h2 class="card-title">📊 Phase 2: Salary Structure Analytics & Charts</h2>
+          <p class="card-desc">อัลกอริทึม 1D K-Means Clustering ($k=3$ Tiers) คำนวณฐานเงินเดือนแบบอัตโนมัติ พร้อมแผนภูมิแท่งเปรียบเทียบข้อมูล</p>
         </div>
         <button class="btn btn-primary" onclick="loadSalaryClusters()" id="btn-cluster">
           ⚡ วิเคราะห์โครงสร้างเงินเดือน (Analyze Salary)
@@ -514,6 +515,43 @@
       </div>
 
       <div id="cluster-result" class="cluster-grid"></div>
+
+      <!-- Interactive Bar Charts Section -->
+      <div class="charts-container" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem; margin-top: 1.5rem;">
+        
+        <!-- Chart 1: K-Means Salary Centroids by Tier -->
+        <div style="background: #F9FAFB; border: 1px solid var(--border); border-radius: 0.85rem; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: #111827;">
+                📈 แผนภูมิแท่ง: ฐานเงินเดือนตามกลุ่ม (Centroid Salary)
+              </h3>
+              <p style="font-size: 0.75rem; color: var(--text-muted);">เปรียบเทียบฐานเงินเดือนเฉลี่ย Tier 1, 2, 3</p>
+            </div>
+            <span style="font-size: 0.75rem; background: #EEF2FF; color: var(--primary); padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600;">k = 3 Tiers</span>
+          </div>
+          <div style="position: relative; height: 260px; width: 100%;">
+            <canvas id="tierChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 2: Individual Employee Salaries -->
+        <div style="background: #F9FAFB; border: 1px solid var(--border); border-radius: 0.85rem; padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+            <div>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: #111827;">
+                📊 แผนภูมิแท่ง: เปรียบเทียบเงินเดือนพนักงานรายบุคคล
+              </h3>
+              <p style="font-size: 0.75rem; color: var(--text-muted);"><span style="color:#4F46E5;">■</span> Active | <span style="color:#F59E0B;">■</span> On Leave</p>
+            </div>
+            <span id="chart-emp-count" style="font-size: 0.75rem; background: #D1FAE5; color: #065F46; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600;">รายบุคคล</span>
+          </div>
+          <div style="position: relative; height: 260px; width: 100%;">
+            <canvas id="employeeChart"></canvas>
+          </div>
+        </div>
+
+      </div>
     </section>
 
     <!-- Phase 1: Add Employee Form -->
@@ -795,6 +833,7 @@
       else if (sortBy === 'name-asc') list.sort((a,b) => a.name.localeCompare(b.name));
 
       renderEmployeeTable(list);
+      renderEmployeeChart(list);
     }
 
     function clearSearch() {
@@ -1079,6 +1118,7 @@
 
       loader.style.display = 'none';
       if (clusters && clusters.length > 0) {
+        cachedClusters = clusters;
         container.innerHTML = clusters.map((c, idx) => `
           <div class="cluster-card tier-${idx + 1}">
             <div class="tier-badge">${c.group}</div>
@@ -1087,9 +1127,204 @@
             <div class="cluster-count">👥 จำนวนพนักงาน: <strong>${c.count} คน</strong></div>
           </div>
         `).join('');
+        renderTierChart(clusters);
       } else {
         container.innerHTML = '<p style="color: var(--text-muted);">ไม่มีข้อมูลสำหรับคำนวณฐานเงินเดือน</p>';
+        renderTierChart([]);
       }
+    }
+
+    // 8. Interactive Charts (Chart.js Bar Charts)
+    let tierChartInstance = null;
+    let employeeChartInstance = null;
+    let cachedClusters = [];
+
+    function renderTierChart(clusters) {
+      if (typeof Chart === 'undefined') return;
+      const canvas = document.getElementById('tierChart');
+      if (!canvas) return;
+
+      if (!clusters || clusters.length === 0) {
+        if (tierChartInstance) {
+          tierChartInstance.destroy();
+          tierChartInstance = null;
+        }
+        return;
+      }
+
+      const labels = clusters.map(c => `${c.group}`);
+      const data = clusters.map(c => Number(c.centroid));
+      const counts = clusters.map(c => Number(c.count));
+
+      if (tierChartInstance) {
+        tierChartInstance.data.labels = labels;
+        tierChartInstance.data.datasets[0].data = data;
+        tierChartInstance.data.datasets[0].counts = counts;
+        tierChartInstance.update();
+      } else {
+        const ctx = canvas.getContext('2d');
+        tierChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'ฐานเงินเดือนเฉลี่ย (Centroid THB)',
+              data: data,
+              counts: counts,
+              backgroundColor: [
+                'rgba(16, 185, 129, 0.75)',
+                'rgba(59, 130, 246, 0.75)',
+                'rgba(139, 92, 246, 0.75)'
+              ],
+              borderColor: [
+                '#10B981',
+                '#3B82F6',
+                '#8B5CF6'
+              ],
+              borderWidth: 2,
+              borderRadius: 8,
+              maxBarThickness: 65
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(17, 24, 39, 0.92)',
+                titleFont: { family: 'Prompt', size: 13, weight: '700' },
+                bodyFont: { family: 'Prompt', size: 12 },
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                  label: function(context) {
+                    const val = Number(context.raw).toLocaleString();
+                    const cnt = context.dataset.counts ? context.dataset.counts[context.dataIndex] : 0;
+                    return [
+                      ` 💰 ฐานเงินเดือนเฉลี่ย: ฿${val}`,
+                      ` 👥 จำนวนพนักงาน: ${cnt} คน`
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(229, 231, 235, 0.6)' },
+                ticks: {
+                  font: { family: 'Prompt', size: 11 },
+                  callback: function(val) { return '฿' + Number(val).toLocaleString(); }
+                }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { font: { family: 'Prompt', size: 12, weight: '600' } }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    function renderEmployeeChart(employees) {
+      if (typeof Chart === 'undefined') return;
+      const canvas = document.getElementById('employeeChart');
+      if (!canvas) return;
+
+      const list = employees || allEmployees;
+      const badge = document.getElementById('chart-emp-count');
+      if (badge) badge.innerText = `${list.length} คน`;
+
+      if (!list || list.length === 0) {
+        if (employeeChartInstance) {
+          employeeChartInstance.destroy();
+          employeeChartInstance = null;
+        }
+        return;
+      }
+
+      const labels = list.map(e => e.name);
+      const data = list.map(e => Number(e.salary));
+      const bgColors = list.map(e => e.status === 'Active' ? 'rgba(79, 70, 229, 0.75)' : 'rgba(245, 158, 11, 0.75)');
+      const borderColors = list.map(e => e.status === 'Active' ? '#4F46E5' : '#F59E0B');
+      const positions = list.map(e => e.position);
+      const statuses = list.map(e => e.status);
+
+      if (employeeChartInstance) {
+        employeeChartInstance.data.labels = labels;
+        employeeChartInstance.data.datasets[0].data = data;
+        employeeChartInstance.data.datasets[0].backgroundColor = bgColors;
+        employeeChartInstance.data.datasets[0].borderColor = borderColors;
+        employeeChartInstance.data.datasets[0].positions = positions;
+        employeeChartInstance.data.datasets[0].statuses = statuses;
+        employeeChartInstance.update();
+      } else {
+        const ctx = canvas.getContext('2d');
+        employeeChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'เงินเดือน (THB)',
+              data: data,
+              positions: positions,
+              statuses: statuses,
+              backgroundColor: bgColors,
+              borderColor: borderColors,
+              borderWidth: 2,
+              borderRadius: 6,
+              maxBarThickness: 45
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: 'rgba(17, 24, 39, 0.92)',
+                titleFont: { family: 'Prompt', size: 13, weight: '700' },
+                bodyFont: { family: 'Prompt', size: 12 },
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                  label: function(context) {
+                    const val = Number(context.raw).toLocaleString();
+                    const pos = context.dataset.positions ? context.dataset.positions[context.dataIndex] : '';
+                    const st = context.dataset.statuses ? context.dataset.statuses[context.dataIndex] : '';
+                    return [
+                      ` 💼 ตำแหน่ง: ${pos}`,
+                      ` 💰 เงินเดือน: ฿${val}`,
+                      ` 📌 สถานะ: ${st}`
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: { color: 'rgba(229, 231, 235, 0.6)' },
+                ticks: {
+                  font: { family: 'Prompt', size: 11 },
+                  callback: function(val) { return '฿' + Number(val).toLocaleString(); }
+                }
+              },
+              x: {
+                grid: { display: false },
+                ticks: {
+                  font: { family: 'Prompt', size: 11 },
+                  maxRotation: 45,
+                  minRotation: 15
+                }
+              }
+            }
+          }
+        });
+      }
+    }
     }
 
     // Close modal on click outside
