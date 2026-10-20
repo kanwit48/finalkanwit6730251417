@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HR Manager & Salary Analytics - Kanwit Voottikulsin (6730251417)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #4F46E5;
+      --primary-hover: #4338CA;
+      --success: #10B981;
+      --warning: #F59E0B;
+      --danger: #EF4444;
+      --bg: #F3F4F6;
+      --card-bg: #FFFFFF;
+      --text: #1F2937;
+      --text-muted: #6B7280;
+      --border: #E5E7EB;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header Bar */
+    header {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .brand p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .badge-course {
+      background: #EEF2FF;
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 9999px;
+      display: inline-block;
+      margin-bottom: 0.25rem;
+    }
+
+    .btn {
+      padding: 0.55rem 1.1rem;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .btn-sm {
+      padding: 0.35rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-danger { background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; }
+    .btn-danger:hover { background: #DC2626; color: #fff; }
+    .btn-warning { background: #FEF3C7; color: #D97706; border: 1px solid #FDE68A; }
+    .btn-warning:hover { background: #D97706; color: #fff; }
+    .btn-success { background: var(--success); color: #fff; }
+    .btn-success:hover { background: #059669; }
+    .btn-outline { background: #FFFFFF; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { background: #F9FAFB; border-color: #D1D5DB; }
+
+    /* Layout */
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card-bg);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    /* Login View */
+    #login-view {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: calc(100vh - 120px);
+      padding: 1rem;
+    }
+
+    .login-box {
+      background: #fff;
+      border-radius: 1.25rem;
+      padding: 2.5rem;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .login-box h2 {
+      font-size: 1.5rem;
+      margin: 0.5rem 0;
+      color: #111827;
+    }
+
+    .form-group {
+      text-align: left;
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.35rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      font-size: 0.95rem;
+      background: #F9FAFB;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    /* K-Means Clusters Grid */
+    .cluster-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .cluster-card {
+      background: #F9FAFB;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      position: relative;
+      border-left: 5px solid var(--primary);
+    }
+
+    .cluster-card.tier-1 { border-left-color: #10B981; }
+    .cluster-card.tier-2 { border-left-color: #3B82F6; }
+    .cluster-card.tier-3 { border-left-color: #8B5CF6; }
+
+    .tier-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.375rem;
+      display: inline-block;
+      margin-bottom: 0.5rem;
+    }
+
+    .tier-1 .tier-badge { background: #D1FAE5; color: #065F46; }
+    .tier-2 .tier-badge { background: #DBEAFE; color: #1E40AF; }
+    .tier-3 .tier-badge { background: #EDE9FE; color: #5B21B6; }
+
+    .centroid-val {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .cluster-count {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Search & Filter Toolbar */
+    .toolbar-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .search-input-wrapper {
+      flex: 1;
+      min-width: 260px;
+      position: relative;
+    }
+
+    .search-input-wrapper span {
+      position: absolute;
+      left: 0.85rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-input-wrapper input {
+      padding-left: 2.4rem;
+    }
+
+    /* Table */
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      background: #F9FAFB;
+      color: #4B5563;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.95rem;
+    }
+
+    tr:hover td {
+      background: #F9FAFB;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 0.25rem 0.65rem;
+      border-radius: 9999px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+    }
+
+    .status-active { background: #D1FAE5; color: #065F46; border: 1px solid #A7F3D0; }
+    .status-active:hover { background: #A7F3D0; }
+    .status-on-leave { background: #FEF3C7; color: #92400E; border: 1px solid #FDE68A; }
+    .status-on-leave:hover { background: #FDE68A; }
+
+    /* Form Inline Grid */
+    .form-inline {
+      display: grid;
+      grid-template-columns: 2fr 2fr 1.5fr auto;
+      gap: 0.75rem;
+      align-items: end;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .form-inline {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Modal Dialog */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(17, 24, 39, 0.6);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 50;
+      padding: 1rem;
+    }
+
+    .modal-box {
+      background: #FFFFFF;
+      border-radius: 1.25rem;
+      padding: 2rem;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--border);
+      animation: modalSlide 0.25s ease-out;
+    }
+
+    @keyframes modalSlide {
+      from { transform: translateY(-20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #111827;
+      color: #fff;
+      padding: 0.85rem 1.5rem;
+      border-radius: 0.75rem;
+      font-size: 0.9rem;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+      display: none;
+      z-index: 60;
+      animation: toastIn 0.3s ease;
+    }
+
+    @keyframes toastIn {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .spinner {
+      border: 3px solid rgba(0,0,0,0.1);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border-left-color: var(--primary);
+      animation: spin 1s linear infinite;
+      display: inline-block;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <span class="badge-course">Internet Programming (Final Exam 2026)</span>
+      <h1>🏢 HR Manager & Salary Analytics System</h1>
+      <p>Student: <strong>Kanwit Voottikulsin</strong> | Student ID: <strong>6730251417</strong> | Sec: 870</p>
+    </div>
+    <div id="auth-actions" style="display: none; display: flex; align-items: center; gap: 1rem;">
+      <span style="font-size: 0.85rem; color: var(--text-muted);">
+        👤 เข้าสู่ระบบในฐานะ: <strong style="color: #111827;">admin</strong>
+      </span>
+      <button class="btn btn-outline btn-sm" onclick="logout()">
+        🚪 ออกจากระบบ (Sign Out)
+      </button>
+    </div>
+  </header>
+
+  <!-- Login View -->
+  <div id="login-view">
+    <div class="login-box">
+      <span class="badge-course">Administrator Login (Phase 1)</span>
+      <h2>เข้าสู่ระบบผู้ดูแลระบบ</h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.5rem;">
+        กรอกข้อมูลเพื่อเข้าสู่ระบบตามเกณฑ์ข้อสอบ Final Exam
+      </p>
+
+      <form onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label>ชื่อผู้ใช้ (Username)</label>
+          <input type="text" id="login-user" class="form-input" value="admin" required>
+        </div>
+        <div class="form-group">
+          <label>รหัสผ่าน (Password)</label>
+          <input type="password" id="login-pass" class="form-input" value="password123" required>
+        </div>
+        <div id="login-error" style="color: var(--danger); font-size: 0.85rem; margin-bottom: 0.75rem; display: none;"></div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+          🔑 เข้าสู่ระบบ (Sign In)
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Dashboard Main View -->
+  <main class="container" id="dashboard-view" style="display: none;">
+
+    <!-- Phase 2: K-Means Salary Analytics Card -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">📊 Phase 2: Salary Structure Analytics</h2>
+          <p class="card-desc">อัลกอริทึม 1D K-Means Clustering ($k=3$ Tiers) คำนวณฐานเงินเดือนแบบอัตโนมัติ</p>
+        </div>
+        <button class="btn btn-primary" onclick="loadSalaryClusters()" id="btn-cluster">
+          ⚡ วิเคราะห์โครงสร้างเงินเดือน (Analyze Salary)
+        </button>
+      </div>
+
+      <div id="cluster-loading" style="display: none; text-align: center; padding: 2rem;">
+        <div class="spinner"></div>
+        <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">กำลังประมวลผล 1D K-Means Algorithm ($k=3$)...</p>
+      </div>
+
+      <div id="cluster-result" class="cluster-grid"></div>
+    </section>
+
+    <!-- Phase 1: Add Employee Form -->
+    <section class="card">
+      <h2 class="card-title">➕ เพิ่มข้อมูลพนักงานใหม่ (Add Employee)</h2>
+      <p class="card-desc">ระบบตรวจสอบความถูกต้อง (Input Validation) ป้องกันค่าว่างและเงินเดือนไม่ถูกต้อง</p>
+
+      <form onsubmit="handleAddEmployee(event)" class="form-inline">
+        <div class="form-group" style="margin: 0;">
+          <label>ชื่อ-นามสกุล *</label>
+          <input type="text" id="add-name" class="form-input" placeholder="เช่น Somchai Prasert" required>
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label>ตำแหน่งงาน (Position) *</label>
+          <input type="text" id="add-position" class="form-input" placeholder="เช่น Senior Developer" required>
+        </div>
+        <div class="form-group" style="margin: 0;">
+          <label>เงินเดือน (THB) *</label>
+          <input type="number" id="add-salary" class="form-input" placeholder="เช่น 45000" min="1" required>
+        </div>
+        <button type="submit" class="btn btn-success" style="height: 42px;">
+          + บันทึกพนักงาน
+        </button>
+      </form>
+    </section>
+
+    <!-- Phase 1: Employee Directory with Search, Edit, Delete -->
+    <section class="card">
+      <div class="card-header">
+        <div>
+          <h2 class="card-title">👥 รายชื่อพนักงานในระบบ (Employee Directory)</h2>
+          <p class="card-desc">รองรับการค้นหา (Search), แก้ไข (Edit), ลบ (Delete), และสลับสถานะการทำงาน</p>
+        </div>
+        <button class="btn btn-outline" onclick="loadEmployees()">
+          🔄 รีเฟรชข้อมูล
+        </button>
+      </div>
+
+      <!-- Search & Filter Toolbar -->
+      <div class="toolbar-grid">
+        <div class="search-input-wrapper">
+          <span>🔍</span>
+          <input type="text" id="search-query" class="form-input" placeholder="ค้นหาด้วยชื่อ, ตำแหน่ง หรือรหัสพนักงาน..." oninput="filterEmployees()">
+        </div>
+
+        <div style="min-width: 160px;">
+          <select id="filter-status" class="form-input" onchange="filterEmployees()">
+            <option value="all">สถานะทั้งหมด (All Status)</option>
+            <option value="Active">🟢 Active (ทำงานอยู่)</option>
+            <option value="On Leave">🟡 On Leave (ลาพัก)</option>
+          </select>
+        </div>
+
+        <div style="min-width: 180px;">
+          <select id="sort-by" class="form-input" onchange="filterEmployees()">
+            <option value="id-asc">เรียงตาม ID (น้อย -> มาก)</option>
+            <option value="id-desc">เรียงตาม ID (มาก -> น้อย)</option>
+            <option value="salary-desc">เงินเดือน (มาก -> น้อย)</option>
+            <option value="salary-asc">เงินเดือน (น้อย -> มาก)</option>
+            <option value="name-asc">ชื่อ (A-Z / ก-ฮ)</option>
+          </select>
+        </div>
+
+        <div>
+          <button class="btn btn-outline btn-sm" onclick="clearSearch()" title="ล้างค่าการค้นหา">
+            ❌ ล้างค่าค้นหา
+          </button>
+        </div>
+
+        <div style="margin-left: auto; font-size: 0.85rem; color: var(--text-muted);" id="search-count">
+          แสดง 6 รายการ
+        </div>
+      </div>
+
+      <!-- Table of Employees -->
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID (kanwit_6730251417_ID_Employee)</th>
+              <th>ชื่อ-นามสกุล</th>
+              <th>ตำแหน่ง (Position)</th>
+              <th>สถานะ (Status)</th>
+              <th>เงินเดือน (Salary)</th>
+              <th style="text-align: right;">การจัดการ (Actions)</th>
+            </tr>
+          </thead>
+          <tbody id="employee-tbody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">
+                กำลังโหลดข้อมูล...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Edit Employee Modal -->
+  <div class="modal-backdrop" id="edit-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>✏️ แก้ไขข้อมูลพนักงาน (Edit Employee)</h3>
+        <button class="btn-close" onclick="closeEditModal()">&times;</button>
+      </div>
+
+      <form onsubmit="handleSaveEdit(event)">
+        <input type="hidden" id="edit-id">
+
+        <div class="form-group">
+          <label>รหัสพนักงาน (ID)</label>
+          <input type="text" id="edit-id-display" class="form-input" disabled style="background: #E5E7EB; cursor: not-allowed;">
+        </div>
+
+        <div class="form-group">
+          <label>ชื่อ-นามสกุล *</label>
+          <input type="text" id="edit-name" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label>ตำแหน่งงาน (Position) *</label>
+          <input type="text" id="edit-position" class="form-input" required>
+        </div>
+
+        <div class="form-group">
+          <label>เงินเดือน (Salary THB) *</label>
+          <input type="number" id="edit-salary" class="form-input" min="1" required>
+        </div>
+
+        <div class="form-group">
+          <label>สถานะการทำงาน (Status)</label>
+          <select id="edit-status" class="form-input">
+            <option value="Active">Active (ทำงานอยู่)</option>
+            <option value="On Leave">On Leave (ลาพัก)</option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-outline" onclick="closeEditModal()">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary">💾 บันทึกการแก้ไข (Save)</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    const API_BASE = '';
+    let allEmployees = [];
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      toast.innerText = message;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 3000);
+    }
+
+    // 1. Authentication (Login / Logout)
+    function checkAuth() {
+      const token = sessionStorage.getItem('token');
+      const authActions = document.getElementById('auth-actions');
+      if (token) {
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('dashboard-view').style.display = 'flex';
+        authActions.style.display = 'flex';
+        loadEmployees();
+        loadSalaryClusters();
+      } else {
+        document.getElementById('login-view').style.display = 'flex';
+        document.getElementById('dashboard-view').style.display = 'none';
+        authActions.style.display = 'none';
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-user').value.trim();
+      const password = document.getElementById('login-pass').value.trim();
+      const errBox = document.getElementById('login-error');
+      errBox.style.display = 'none';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          sessionStorage.setItem('token', data.token);
+          showToast('เข้าสู่ระบบสำเร็จ (Login Success)');
+          checkAuth();
+        } else {
+          errBox.innerText = data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (401)';
+          errBox.style.display = 'block';
+        }
+      } catch (err) {
+        errBox.innerText = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Backend ได้';
+        errBox.style.display = 'block';
+      }
+    }
+
+    function logout() {
+      sessionStorage.removeItem('token');
+      showToast('ออกจากระบบเรียบร้อย');
+      checkAuth();
+    }
+
+    // 2. Load & Search / Filter Employees
+    async function loadEmployees() {
+      const tbody = document.getElementById('employee-tbody');
+      try {
+        const res = await fetch(`${API_BASE}/api/employees`);
+        allEmployees = await res.json();
+
+        if (!Array.isArray(allEmployees)) {
+          allEmployees = [];
+        }
+
+        filterEmployees();
+      } catch (err) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 2rem;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
+      }
+    }
+
+    function filterEmployees() {
+      const q = document.getElementById('search-query').value.trim().toLowerCase();
+      const statusFilter = document.getElementById('filter-status').value;
+      const sortBy = document.getElementById('sort-by').value;
+
+      let list = allEmployees.filter(emp => {
+        const matchQuery = !q ||
+          String(emp.id).toLowerCase().includes(q) ||
+          String(emp.name).toLowerCase().includes(q) ||
+          String(emp.position).toLowerCase().includes(q) ||
+          String(emp.status).toLowerCase().includes(q) ||
+          String(emp.salary).includes(q);
+
+        const matchStatus = statusFilter === 'all' || emp.status === statusFilter;
+
+        return matchQuery && matchStatus;
+      });
+
+      // Sorting
+      if (sortBy === 'id-asc') list.sort((a,b) => Number(a.id) - Number(b.id));
+      else if (sortBy === 'id-desc') list.sort((a,b) => Number(b.id) - Number(a.id));
+      else if (sortBy === 'salary-desc') list.sort((a,b) => Number(b.salary) - Number(a.salary));
+      else if (sortBy === 'salary-asc') list.sort((a,b) => Number(a.salary) - Number(b.salary));
+      else if (sortBy === 'name-asc') list.sort((a,b) => a.name.localeCompare(b.name));
+
+      renderEmployeeTable(list);
+    }
+
+    function clearSearch() {
+      document.getElementById('search-query').value = '';
+      document.getElementById('filter-status').value = 'all';
+      document.getElementById('sort-by').value = 'id-asc';
+      filterEmployees();
+    }
+
+    function renderEmployeeTable(employees) {
+      const tbody = document.getElementById('employee-tbody');
+      const countLabel = document.getElementById('search-count');
+      countLabel.innerText = `แสดง ${employees.length} จากทั้งหมด ${allEmployees.length} คน`;
+
+      if (employees.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 2rem;">🔍 ไม่พบข้อมูลพนักงานที่ตรงกับเงื่อนไขการค้นหา</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = employees.map(emp => `
+        <tr>
+          <td><strong>#${emp.id}</strong></td>
+          <td><strong>${emp.name}</strong></td>
+          <td>${emp.position}</td>
+          <td>
+            <span class="status-badge ${emp.status === 'Active' ? 'status-active' : 'status-on-leave'}"
+                  onclick="toggleStatus('${emp.id}')" title="คลิกเพื่อสลับสถานะ">
+              ● ${emp.status}
+            </span>
+          </td>
+          <td style="font-weight: 700; color: #059669;">
+            ฿${Number(emp.salary).toLocaleString()}
+          </td>
+          <td style="text-align: right; white-space: nowrap;">
+            <button class="btn btn-warning btn-sm" onclick="openEditModal('${emp.id}')" title="แก้ไขข้อมูล">
+              ✏️ แก้ไข (Edit)
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteEmployee('${emp.id}', '${emp.name}')" title="ลบพนักงาน">
+              🗑️ ลบ (Delete)
+            </button>
+            <button class="btn btn-outline btn-sm" onclick="toggleStatus('${emp.id}')" title="สลับสถานะ">
+              🔄 สลับสถานะ
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // 3. Add Employee (Phase 1)
+    async function handleAddEmployee(e) {
+      e.preventDefault();
+      const name = document.getElementById('add-name').value.trim();
+      const position = document.getElementById('add-position').value.trim();
+      const salary = Number(document.getElementById('add-salary').value);
+
+      if (!name || !position || !salary || salary <= 0) {
+        alert('กรุณากรอกข้อมูลให้ครบถ้วนและระบุเงินเดือนที่ถูกต้อง (> 0)');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/employees`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, position, salary })
+        });
+        const data = await res.json();
+        if (res.status === 201 || (res.ok && data.success)) {
+          document.getElementById('add-name').value = '';
+          document.getElementById('add-position').value = '';
+          document.getElementById('add-salary').value = '';
+          showToast(`✅ เพิ่มข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
+          loadEmployees();
+          loadSalaryClusters();
+        } else {
+          alert(data.message || 'เกิดข้อผิดพลาดในการเพิ่มพนักงาน (400 Bad Request)');
+        }
+      } catch (err) {
+        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Backend ได้');
+      }
+    }
+
+    // 4. Edit Employee (Phase 1)
+    function openEditModal(id) {
+      const emp = allEmployees.find(e => String(e.id) === String(id));
+      if (!emp) return;
+
+      document.getElementById('edit-id').value = emp.id;
+      document.getElementById('edit-id-display').value = '#' + emp.id;
+      document.getElementById('edit-name').value = emp.name;
+      document.getElementById('edit-position').value = emp.position;
+      document.getElementById('edit-salary').value = emp.salary;
+      document.getElementById('edit-status').value = emp.status || 'Active';
+
+      document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+      document.getElementById('edit-modal').style.display = 'none';
+    }
+
+    async function handleSaveEdit(e) {
+      e.preventDefault();
+      const id = document.getElementById('edit-id').value;
+      const name = document.getElementById('edit-name').value.trim();
+      const position = document.getElementById('edit-position').value.trim();
+      const salary = Number(document.getElementById('edit-salary').value);
+      const status = document.getElementById('edit-status').value;
+
+      if (!name || !position || isNaN(salary) || salary <= 0) {
+        alert('กรุณากรอกข้อมูลให้ครบถ้วนและระบุเงินเดือนที่ถูกต้อง');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/api/employees/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, position, salary, status })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          closeEditModal();
+          showToast(`💾 อัปเดตข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
+          loadEmployees();
+          loadSalaryClusters();
+        } else {
+          alert(data.message || 'ไม่สามารถแก้ไขข้อมูลพนักงานได้');
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+      }
+    }
+
+    // 5. Delete Employee (Phase 1)
+    async function deleteEmployee(id, name) {
+      if (!confirm(`⚠️ ยืนยันการลบข้อมูลพนักงาน:\n\nชื่อ: "${name}" (ID: #${id})\n\nคุณแน่ใจหรือไม่ว่าต้องการลบออกจากระบบ?`)) {
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE}/api/employees/${id}`, {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          showToast(`🗑️ ลบพนักงาน "${name}" สำเร็จ`);
+          loadEmployees();
+          loadSalaryClusters();
+        } else {
+          alert('ไม่สามารถลบข้อมูลพนักงานได้');
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      }
+    }
+
+    // 6. Toggle Status (Active <-> On Leave)
+    async function toggleStatus(id) {
+      try {
+        const res = await fetch(`${API_BASE}/api/employees/${id}/status`, {
+          method: 'PUT'
+        });
+        if (res.ok) {
+          showToast('สลับสถานะการทำงานเรียบร้อย');
+          loadEmployees();
+        } else {
+          alert('ไม่สามารถเปลี่ยนสถานะได้');
+        }
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      }
+    }
+
+    // 7. Salary Analytics - 1D K-Means (Phase 2)
+    async function loadSalaryClusters() {
+      const container = document.getElementById('cluster-result');
+      const loader = document.getElementById('cluster-loading');
+      loader.style.display = 'block';
+      container.innerHTML = '';
+
+      try {
+        const res = await fetch(`${API_BASE}/api/employees/salary-clusters`);
+        const data = await res.json();
+        loader.style.display = 'none';
+
+        if (res.ok && data.success && Array.isArray(data.clusters)) {
+          container.innerHTML = data.clusters.map((c, idx) => `
+            <div class="cluster-card tier-${idx + 1}">
+              <div class="tier-badge">${c.group}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">ฐานเงินเดือนเฉลี่ย (Centroid)</div>
+              <div class="centroid-val">฿${Number(c.centroid).toLocaleString()}</div>
+              <div class="cluster-count">👥 จำนวนพนักงาน: <strong>${c.count} คน</strong></div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        loader.style.display = 'none';
+        container.innerHTML = '<p style="color: var(--danger);">ไม่สามารถคำนวณคลัสเตอร์เงินเดือนได้</p>';
+      }
+    }
+
+    // Close modal on click outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('edit-modal');
+      if (event.target === modal) {
+        closeEditModal();
+      }
+    };
+
+    // Auto initialize
+    checkAuth();
+  </script>
+</body>
+</html>
