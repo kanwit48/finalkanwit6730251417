@@ -666,7 +666,22 @@
 
   <script>
     const API_BASE = '';
-    let allEmployees = [];
+    const isGitHubPages = window.location.hostname.includes('github.io');
+
+    const DEFAULT_BENCHMARK = [
+      { id: "1", name: "John Doe", position: "Software Engineer", status: "Active", salary: 45000 },
+      { id: "2", name: "Sarah Jenkins", position: "Junior Developer", status: "Active", salary: 22000 },
+      { id: "3", name: "Michael Chang", position: "Office Assistant", status: "On Leave", salary: 18000 },
+      { id: "4", name: "Emily Watson", position: "Project Manager", status: "Active", salary: 52000 },
+      { id: "5", name: "David Kim", position: "Engineering Director", status: "Active", salary: 95000 },
+      { id: "6", name: "Jessica Taylor", position: "VP of Technology", status: "On Leave", salary: 85000 }
+    ];
+
+    let allEmployees = JSON.parse(localStorage.getItem('hr_employees') || 'null') || [...DEFAULT_BENCHMARK];
+
+    function saveLocal() {
+      localStorage.setItem('hr_employees', JSON.stringify(allEmployees));
+    }
 
     function showToast(message) {
       const toast = document.getElementById('toast');
@@ -699,23 +714,30 @@
       const errBox = document.getElementById('login-error');
       errBox.style.display = 'none';
 
-      try {
-        const res = await fetch(`${API_BASE}/api/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          sessionStorage.setItem('token', data.token);
-          showToast('เข้าสู่ระบบสำเร็จ (Login Success)');
-          checkAuth();
-        } else {
-          errBox.innerText = data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (401)';
-          errBox.style.display = 'block';
-        }
-      } catch (err) {
-        errBox.innerText = 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Backend ได้';
+      if (!isGitHubPages) {
+        try {
+          const res = await fetch(`${API_BASE}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            sessionStorage.setItem('token', data.token);
+            showToast('เข้าสู่ระบบสำเร็จ (Login Success)');
+            checkAuth();
+            return;
+          }
+        } catch (err) {}
+      }
+
+      // Client-side credentials check (for GitHub Pages & fallback)
+      if (username === 'admin' && password === 'password123') {
+        sessionStorage.setItem('token', 'gh-demo-token');
+        showToast('เข้าสู่ระบบสำเร็จ (Login Success)');
+        checkAuth();
+      } else {
+        errBox.innerText = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง (401)';
         errBox.style.display = 'block';
       }
     }
@@ -729,18 +751,22 @@
     // 2. Load & Search / Filter Employees
     async function loadEmployees() {
       const tbody = document.getElementById('employee-tbody');
-      try {
-        const res = await fetch(`${API_BASE}/api/employees`);
-        allEmployees = await res.json();
-
-        if (!Array.isArray(allEmployees)) {
-          allEmployees = [];
+      if (!isGitHubPages) {
+        try {
+          const res = await fetch(`${API_BASE}/api/employees`);
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data) && data.length > 0) {
+              allEmployees = data;
+              saveLocal();
+            }
+          }
+        } catch (err) {
+          console.log('Using local dataset:', err.message);
         }
-
-        filterEmployees();
-      } catch (err) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--danger); padding: 2rem;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>';
       }
+
+      filterEmployees();
     }
 
     function filterEmployees() {
@@ -829,26 +855,37 @@
         return;
       }
 
-      try {
-        const res = await fetch(`${API_BASE}/api/employees`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, position, salary })
-        });
-        const data = await res.json();
-        if (res.status === 201 || (res.ok && data.success)) {
-          document.getElementById('add-name').value = '';
-          document.getElementById('add-position').value = '';
-          document.getElementById('add-salary').value = '';
-          showToast(`✅ เพิ่มข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
-          loadEmployees();
-          loadSalaryClusters();
-        } else {
-          alert(data.message || 'เกิดข้อผิดพลาดในการเพิ่มพนักงาน (400 Bad Request)');
-        }
-      } catch (err) {
-        alert('ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ Backend ได้');
+      if (!isGitHubPages) {
+        try {
+          const res = await fetch(`${API_BASE}/api/employees`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, position, salary })
+          });
+          const data = await res.json();
+          if (res.status === 201 || (res.ok && data.success)) {
+            document.getElementById('add-name').value = '';
+            document.getElementById('add-position').value = '';
+            document.getElementById('add-salary').value = '';
+            showToast(`✅ เพิ่มข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
+            loadEmployees();
+            loadSalaryClusters();
+            return;
+          }
+        } catch (err) {}
       }
+
+      // Local / GitHub Pages fallback
+      const maxId = allEmployees.reduce((m, e) => Math.max(m, Number(e.id) || 0), 0);
+      const newEmp = { id: String(maxId + 1), name, position, salary, status: 'Active' };
+      allEmployees.push(newEmp);
+      saveLocal();
+      document.getElementById('add-name').value = '';
+      document.getElementById('add-position').value = '';
+      document.getElementById('add-salary').value = '';
+      showToast(`✅ เพิ่มข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
+      filterEmployees();
+      loadSalaryClusters();
     }
 
     // 4. Edit Employee (Phase 1)
@@ -883,24 +920,36 @@
         return;
       }
 
-      try {
-        const res = await fetch(`${API_BASE}/api/employees/${id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, position, salary, status })
-        });
-        const data = await res.json();
+      if (!isGitHubPages) {
+        try {
+          const res = await fetch(`${API_BASE}/api/employees/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, position, salary, status })
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            closeEditModal();
+            showToast(`💾 อัปเดตข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
+            loadEmployees();
+            loadSalaryClusters();
+            return;
+          }
+        } catch (err) {}
+      }
 
-        if (res.ok && data.success) {
-          closeEditModal();
-          showToast(`💾 อัปเดตข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
-          loadEmployees();
-          loadSalaryClusters();
-        } else {
-          alert(data.message || 'ไม่สามารถแก้ไขข้อมูลพนักงานได้');
-        }
-      } catch (err) {
-        alert('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์');
+      // Local / GitHub Pages fallback
+      const emp = allEmployees.find(e => String(e.id) === String(id));
+      if (emp) {
+        emp.name = name;
+        emp.position = position;
+        emp.salary = salary;
+        emp.status = status;
+        saveLocal();
+        closeEditModal();
+        showToast(`💾 อัปเดตข้อมูลพนักงาน "${name}" เรียบร้อยแล้ว!`);
+        filterEmployees();
+        loadSalaryClusters();
       }
     }
 
@@ -909,64 +958,137 @@
       if (!confirm(`⚠️ ยืนยันการลบข้อมูลพนักงาน:\n\nชื่อ: "${name}" (ID: #${id})\n\nคุณแน่ใจหรือไม่ว่าต้องการลบออกจากระบบ?`)) {
         return;
       }
-      try {
-        const res = await fetch(`${API_BASE}/api/employees/${id}`, {
-          method: 'DELETE'
-        });
-        if (res.ok) {
-          showToast(`🗑️ ลบพนักงาน "${name}" สำเร็จ`);
-          loadEmployees();
-          loadSalaryClusters();
-        } else {
-          alert('ไม่สามารถลบข้อมูลพนักงานได้');
-        }
-      } catch (err) {
-        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+
+      if (!isGitHubPages) {
+        try {
+          const res = await fetch(`${API_BASE}/api/employees/${id}`, { method: 'DELETE' });
+          if (res.ok) {
+            showToast(`🗑️ ลบพนักงาน "${name}" สำเร็จ`);
+            loadEmployees();
+            loadSalaryClusters();
+            return;
+          }
+        } catch (err) {}
       }
+
+      allEmployees = allEmployees.filter(e => String(e.id) !== String(id));
+      saveLocal();
+      showToast(`🗑️ ลบพนักงาน "${name}" สำเร็จ`);
+      filterEmployees();
+      loadSalaryClusters();
     }
 
     // 6. Toggle Status (Active <-> On Leave)
     async function toggleStatus(id) {
-      try {
-        const res = await fetch(`${API_BASE}/api/employees/${id}/status`, {
-          method: 'PUT'
-        });
-        if (res.ok) {
-          showToast('สลับสถานะการทำงานเรียบร้อย');
-          loadEmployees();
-        } else {
-          alert('ไม่สามารถเปลี่ยนสถานะได้');
-        }
-      } catch (err) {
-        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+      if (!isGitHubPages) {
+        try {
+          const res = await fetch(`${API_BASE}/api/employees/${id}/status`, { method: 'PUT' });
+          if (res.ok) {
+            showToast('สลับสถานะการทำงานเรียบร้อย');
+            loadEmployees();
+            return;
+          }
+        } catch (err) {}
+      }
+
+      const emp = allEmployees.find(e => String(e.id) === String(id));
+      if (emp) {
+        emp.status = emp.status === 'Active' ? 'On Leave' : 'Active';
+        saveLocal();
+        showToast('สลับสถานะการทำงานเรียบร้อย');
+        filterEmployees();
       }
     }
 
     // 7. Salary Analytics - 1D K-Means (Phase 2)
+    function calculateClientKMeans(salaries, k = 3, maxIterations = 50) {
+      if (!salaries || salaries.length === 0) return [];
+      const actualK = Math.min(k, salaries.length);
+      const sorted = [...salaries].sort((a, b) => a - b);
+      let centroids = [];
+      for (let i = 0; i < actualK; i++) {
+        const idx = Math.floor((i / (actualK - 1 || 1)) * (sorted.length - 1));
+        centroids.push(sorted[idx]);
+      }
+      let clusters = Array.from({ length: actualK }, () => []);
+      for (let iter = 0; iter < maxIterations; iter++) {
+        clusters = Array.from({ length: actualK }, () => []);
+        for (const val of salaries) {
+          let minDist = Infinity;
+          let closestIdx = 0;
+          for (let c = 0; c < actualK; c++) {
+            const dist = Math.abs(val - centroids[c]);
+            if (dist < minDist) {
+              minDist = dist;
+              closestIdx = c;
+            }
+          }
+          clusters[closestIdx].push(val);
+        }
+        let changed = false;
+        for (let c = 0; c < actualK; c++) {
+          if (clusters[c].length > 0) {
+            const sum = clusters[c].reduce((acc, curr) => acc + curr, 0);
+            const newCentroid = sum / clusters[c].length;
+            if (Math.abs(newCentroid - centroids[c]) > 0.001) {
+              centroids[c] = newCentroid;
+              changed = true;
+            }
+          }
+        }
+        if (!changed) break;
+      }
+      const clusterData = centroids.map((c, index) => ({
+        centroid: Math.round(c),
+        count: clusters[index].length
+      })).sort((a, b) => a.centroid - b.centroid);
+
+      const result = [];
+      for (let i = 0; i < 3; i++) {
+        result.push({
+          group: `Tier ${i + 1}`,
+          centroid: i < clusterData.length ? clusterData[i].centroid : 0,
+          count: i < clusterData.length ? clusterData[i].count : 0
+        });
+      }
+      return result;
+    }
+
     async function loadSalaryClusters() {
       const container = document.getElementById('cluster-result');
       const loader = document.getElementById('cluster-loading');
       loader.style.display = 'block';
       container.innerHTML = '';
 
-      try {
-        const res = await fetch(`${API_BASE}/api/employees/salary-clusters`);
-        const data = await res.json();
-        loader.style.display = 'none';
+      let clusters = null;
 
-        if (res.ok && data.success && Array.isArray(data.clusters)) {
-          container.innerHTML = data.clusters.map((c, idx) => `
-            <div class="cluster-card tier-${idx + 1}">
-              <div class="tier-badge">${c.group}</div>
-              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">ฐานเงินเดือนเฉลี่ย (Centroid)</div>
-              <div class="centroid-val">฿${Number(c.centroid).toLocaleString()}</div>
-              <div class="cluster-count">👥 จำนวนพนักงาน: <strong>${c.count} คน</strong></div>
-            </div>
-          `).join('');
-        }
-      } catch (err) {
-        loader.style.display = 'none';
-        container.innerHTML = '<p style="color: var(--danger);">ไม่สามารถคำนวณคลัสเตอร์เงินเดือนได้</p>';
+      if (!isGitHubPages) {
+        try {
+          const res = await fetch(`${API_BASE}/api/employees/salary-clusters`);
+          const data = await res.json();
+          if (res.ok && data.success && Array.isArray(data.clusters)) {
+            clusters = data.clusters;
+          }
+        } catch (err) {}
+      }
+
+      if (!clusters) {
+        const salaries = allEmployees.map(e => Number(e.salary)).filter(s => !isNaN(s));
+        clusters = calculateClientKMeans(salaries, 3);
+      }
+
+      loader.style.display = 'none';
+      if (clusters && clusters.length > 0) {
+        container.innerHTML = clusters.map((c, idx) => `
+          <div class="cluster-card tier-${idx + 1}">
+            <div class="tier-badge">${c.group}</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">ฐานเงินเดือนเฉลี่ย (Centroid)</div>
+            <div class="centroid-val">฿${Number(c.centroid).toLocaleString()}</div>
+            <div class="cluster-count">👥 จำนวนพนักงาน: <strong>${c.count} คน</strong></div>
+          </div>
+        `).join('');
+      } else {
+        container.innerHTML = '<p style="color: var(--text-muted);">ไม่มีข้อมูลสำหรับคำนวณฐานเงินเดือน</p>';
       }
     }
 
