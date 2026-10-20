@@ -5,6 +5,7 @@ const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3103;
+const CLOUD_API = 'http://119.59.102.161:3103';
 
 // Middleware
 app.use(cors());
@@ -13,48 +14,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // In-memory Employee Data (Default seed & fallback)
 let employees = [
-  {
-    id: "1",
-    name: "John Doe",
-    position: "Software Engineer",
-    status: "Active",
-    salary: 45000
-  },
-  {
-    id: "2",
-    name: "Sarah Jenkins",
-    position: "Junior Developer",
-    status: "Active",
-    salary: 22000
-  },
-  {
-    id: "3",
-    name: "Michael Chang",
-    position: "Office Assistant",
-    status: "On Leave",
-    salary: 18000
-  },
-  {
-    id: "4",
-    name: "Emily Watson",
-    position: "Project Manager",
-    status: "Active",
-    salary: 52000
-  },
-  {
-    id: "5",
-    name: "David Kim",
-    position: "Engineering Director",
-    status: "Active",
-    salary: 95000
-  },
-  {
-    id: "6",
-    name: "Jessica Taylor",
-    position: "VP of Technology",
-    status: "On Leave",
-    salary: 85000
-  }
+  { id: "1", name: "John Doe", position: "Software Engineer", status: "Active", salary: 45000 },
+  { id: "2", name: "Sarah Jenkins", position: "Junior Developer", status: "Active", salary: 22000 },
+  { id: "3", name: "Michael Chang", position: "Office Assistant", status: "On Leave", salary: 18000 },
+  { id: "4", name: "Emily Watson", position: "Project Manager", status: "Active", salary: 52000 },
+  { id: "5", name: "David Kim", position: "Engineering Director", status: "Active", salary: 95000 },
+  { id: "6", name: "Jessica Taylor", position: "VP of Technology", status: "On Leave", salary: 85000 }
 ];
 
 let nextId = 7;
@@ -75,7 +40,7 @@ try {
     waitForConnections: true,
     connectionLimit: 5,
     queueLimit: 0,
-    connectTimeout: 5000
+    connectTimeout: 3000
   });
 
   (async () => {
@@ -102,14 +67,31 @@ try {
         }
       }
       conn.release();
-      console.log(`Database storage: ${useDb ? 'Active on table `' + tableName + '`' : 'In-memory fallback'}`);
+      console.log(`Database storage: ${useDb ? 'Active on table `' + tableName + '`' : 'Proxying to Cloud DB'}`);
     } catch (err) {
-      console.log('⚠️  MySQL connection unavailable, running with in-memory storage:', err.message);
+      console.log('ℹ️  Local MySQL unavailable; requests will proxy directly to Cloud Backend:', CLOUD_API);
       useDb = false;
     }
   })();
 } catch (e) {
   useDb = false;
+}
+
+// Proxy helper for local dev when running outside the cloud container
+async function proxyToCloud(method, endpoint, body) {
+  try {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(4000)
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(CLOUD_API + endpoint, opts);
+    const data = await r.json();
+    return { ok: r.ok, status: r.status, data };
+  } catch (err) {
+    return null;
+  }
 }
 
 // Helper function to extract employee fields regardless of column prefix
@@ -154,7 +136,12 @@ app.get('/api/employees', async (req, res) => {
         return res.status(200).json(rows.map(normalizeRow));
       }
     } catch (err) {
-      console.error('DB query error, fallback to memory:', err.message);
+      console.error('DB query error:', err.message);
+    }
+  } else {
+    const cloudRes = await proxyToCloud('GET', '/api/employees');
+    if (cloudRes && cloudRes.ok) {
+      return res.status(cloudRes.status).json(cloudRes.data);
     }
   }
 
@@ -217,6 +204,11 @@ app.post('/api/employees', async (req, res) => {
     } catch (err) {
       console.error('DB insert error, saving to memory:', err.message);
     }
+  } else {
+    const cloudRes = await proxyToCloud('POST', '/api/employees', req.body);
+    if (cloudRes && cloudRes.ok) {
+      return res.status(cloudRes.status).json(cloudRes.data);
+    }
   }
 
   employees.push(newEmployee);
@@ -253,6 +245,11 @@ app.put('/api/employees/:id/status', async (req, res) => {
       }
     } catch (err) {
       console.error('DB update error, fallback to memory:', err.message);
+    }
+  } else {
+    const cloudRes = await proxyToCloud('PUT', `/api/employees/${id}/status`);
+    if (cloudRes && cloudRes.ok) {
+      return res.status(cloudRes.status).json(cloudRes.data);
     }
   }
 
@@ -307,6 +304,11 @@ app.put('/api/employees/:id', async (req, res) => {
     } catch (err) {
       console.error('DB update error:', err.message);
     }
+  } else {
+    const cloudRes = await proxyToCloud('PUT', `/api/employees/${id}`, req.body);
+    if (cloudRes && cloudRes.ok) {
+      return res.status(cloudRes.status).json(cloudRes.data);
+    }
   }
 
   const emp = employees.find(e => e.id === String(id));
@@ -342,6 +344,11 @@ app.delete('/api/employees/:id', async (req, res) => {
     } catch (err) {
       console.error('DB delete error, fallback to memory:', err.message);
     }
+  } else {
+    const cloudRes = await proxyToCloud('DELETE', `/api/employees/${id}`);
+    if (cloudRes && cloudRes.ok) {
+      return res.status(cloudRes.status).json(cloudRes.data);
+    }
   }
 
   const index = employees.findIndex(e => e.id === String(id));
@@ -371,7 +378,6 @@ function run1DKMeans(salaries, k = 3, maxIterations = 100) {
   const actualK = Math.min(k, salaries.length);
   const sorted = [...salaries].sort((a, b) => a - b);
 
-  // Initialize centroids evenly spaced across the sorted dataset
   let centroids = [];
   for (let i = 0; i < actualK; i++) {
     const idx = Math.floor((i / (actualK - 1 || 1)) * (sorted.length - 1));
@@ -383,7 +389,6 @@ function run1DKMeans(salaries, k = 3, maxIterations = 100) {
   for (let iter = 0; iter < maxIterations; iter++) {
     clusters = Array.from({ length: actualK }, () => []);
 
-    // Assign each salary to nearest centroid
     for (const val of salaries) {
       let minDist = Infinity;
       let closestIdx = 0;
@@ -397,7 +402,6 @@ function run1DKMeans(salaries, k = 3, maxIterations = 100) {
       clusters[closestIdx].push(val);
     }
 
-    // Recompute centroids
     let changed = false;
     for (let c = 0; c < actualK; c++) {
       if (clusters[c].length > 0) {
@@ -413,13 +417,11 @@ function run1DKMeans(salaries, k = 3, maxIterations = 100) {
     if (!changed) break;
   }
 
-  // Format and sort results ascending by centroid value
   const clusterData = centroids.map((c, index) => ({
     centroid: Math.round(c),
     count: clusters[index].length
   })).sort((a, b) => a.centroid - b.centroid);
 
-  // Guarantee 3 tiers in response
   const result = [];
   for (let i = 0; i < 3; i++) {
     if (i < clusterData.length) {
@@ -454,6 +456,11 @@ app.get('/api/employees/salary-clusters', async (req, res) => {
         }
       } catch (err) {
         console.error('DB query for clusters error:', err.message);
+      }
+    } else {
+      const cloudRes = await proxyToCloud('GET', '/api/employees/salary-clusters');
+      if (cloudRes && cloudRes.ok) {
+        return res.status(cloudRes.status).json(cloudRes.data);
       }
     }
 
