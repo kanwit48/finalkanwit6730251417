@@ -9,3 +9,8 @@ npm-debug.*
 .env.production.local
 .DS_Store
 Thumbs.db
+node_modules/
+.env
+*.b64
+*.tar.gz
+.pm2/
